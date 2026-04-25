@@ -197,7 +197,7 @@ class TestRetry(unittest.TestCase):
         """retry(n) should reset its budget per subscription so repeat() works correctly.
 
         Regression test for https://github.com/ReactiveX/RxPY/issues/712.
-        """
+        """  # noqa: E501
         scheduler = TestScheduler()
         xs = scheduler.create_cold_observable(on_next(90, 42), on_completed(200))
 
