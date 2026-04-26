@@ -1,4 +1,5 @@
 import unittest
+from typing import Any, NoReturn
 
 import pytest
 
@@ -20,7 +21,7 @@ class RxException(Exception):
 
 
 # Helper function for raising exceptions within lambdas
-def _raise(ex):
+def _raise(ex: Any) -> NoReturn:
     raise RxException(ex)
 
 
@@ -79,21 +80,23 @@ class TestRetry(unittest.TestCase):
     def test_retry_observable_throws(self):
         scheduler1 = TestScheduler()
         xs = reactivex.return_value(1).pipe(ops.retry())
-        xs.subscribe(lambda x: _raise("ex"), scheduler=scheduler1)
+        xs.subscribe(lambda x: _raise(Exception("ex")), scheduler=scheduler1)
 
         with pytest.raises(RxException):
             scheduler1.start()
 
         scheduler2 = TestScheduler()
         ys = reactivex.throw("ex").pipe(ops.retry())
-        d = ys.subscribe(on_error=lambda ex: _raise("ex"), scheduler=scheduler2)
+        d = ys.subscribe(
+            on_error=lambda ex: _raise(Exception("ex")), scheduler=scheduler2
+        )
 
         scheduler2.schedule_absolute(210, lambda sc, st: d.dispose())
         scheduler2.start()
 
         scheduler3 = TestScheduler()
         zs = reactivex.return_value(1).pipe(ops.retry())
-        zs.subscribe(on_completed=lambda: _raise("ex"), scheduler=scheduler3)
+        zs.subscribe(on_completed=lambda: _raise(Exception("ex")), scheduler=scheduler3)
 
         with pytest.raises(RxException):
             scheduler3.start()
@@ -168,13 +171,15 @@ class TestRetry(unittest.TestCase):
     def test_retry_observable_retry_count_throws(self):
         scheduler1 = TestScheduler()
         xs = reactivex.return_value(1).pipe(ops.retry(3))
-        xs.subscribe(lambda x: _raise("ex"), scheduler=scheduler1)
+        xs.subscribe(lambda x: _raise(Exception("ex")), scheduler=scheduler1)
 
         self.assertRaises(RxException, scheduler1.start)
 
         scheduler2 = TestScheduler()
         ys = reactivex.throw("ex").pipe(ops.retry(100))
-        d = ys.subscribe(on_error=lambda ex: _raise("ex"), scheduler=scheduler2)
+        d = ys.subscribe(
+            on_error=lambda ex: _raise(Exception("ex")), scheduler=scheduler2
+        )
 
         def dispose(_, __):
             d.dispose()
@@ -184,12 +189,14 @@ class TestRetry(unittest.TestCase):
 
         scheduler3 = TestScheduler()
         zs = reactivex.return_value(1).pipe(ops.retry(100))
-        zs.subscribe(on_completed=lambda: _raise("ex"), scheduler=scheduler3)
+        zs.subscribe(on_completed=lambda: _raise(Exception("ex")), scheduler=scheduler3)
 
         with pytest.raises(RxException):
             scheduler3.start()
 
-        xss = reactivex.create(lambda o: _raise("ex")).pipe(ops.retry(100))
+        xss = reactivex.create(lambda o, s: _raise(Exception("ex"))).pipe(
+            ops.retry(100)
+        )
         with pytest.raises(Exception):
             xss.subscribe()
 
